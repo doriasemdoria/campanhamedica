@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Campanha CSV</title>
+
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0d1117;
+  --card:#161b22;
+  --border:#30363d;
+  --text:#e6edf3;
+  --muted:#8b949e;
+  --accent:#3fb950;
+  --danger:#f85149;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'JetBrains Mono', monospace;
+}
+header{
+  padding:16px;
+  text-align:center;
+  font-weight:600;
+  letter-spacing:.5px
+}
+.container{
+  max-width:760px;
+  margin:auto;
+  padding:12px;
+  padding-bottom:90px
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35)
+}
+.card h3{
+  margin:0 0 10px;
+  font-size:14px;
+  color:var(--muted);
+  font-weight:600
+}
+input,select,textarea{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#0d1117;
+  color:var(--text);
+  margin-bottom:8px;
+  font-family:inherit
+}
+button{
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  background:var(--accent);
+  color:#000;
+  font-weight:700;
+  cursor:pointer;
+  transition:.15s ease
+}
+button:active{transform:scale(.97)}
+.toast{
+  position:fixed;
+  bottom:40px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#161b22;
+  border:1px solid var(--border);
+  padding:10px 16px;
+  border-radius:999px;
+  opacity:0;
+  transition:.25s ease;
+  pointer-events:none
+}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>CAMPANHA CSV</header>
+
+<div class="container">
+
+<div class="card">
+<h3>Template de campanha</h3>
+
+<select id="templateSelect">
+  <option value="pediatria">Pediatria</option>
+  <option value="utipedneo">UTI Ped/Neo</option>
+  <option value="adulto">Adulto</option>
+  <option value="utiadulto">UTI Adulto</option>
+</select>
+
+<textarea id="numbers" rows="8"
+placeholder="Cole os números aqui (um por linha ou separados por vírgula)"></textarea>
+
+<button onclick="downloadCSV()">⬇️ Baixar CSV</button>
+</div>
+
+</div>
+
+<div id="toast" class="toast">OK</div>
+
+<script>
+// ================= NORMALIZAR =================
+function normalizeNumber(n){
+  let num=n.replace(/\D/g,'');
+  if(!num.startsWith('55')) num='55'+num;
+  return num;
+}
+
+// ================= CSV =================
+function downloadCSV(){
+  const raw=numbers.value.trim();
+  if(!raw) return toast('Cole os números');
+
+  const nums=raw
+    .split(/[\n,; ]+/)
+    .filter(Boolean)
+    .map(normalizeNumber);
+
+  let csv='Nome;Telefone\n';
+  nums.forEach(n=>{csv+=`;${n}\n`;});
+
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=templateSelect.value+'.csv';
+  a.click();
+
+  toast('CSV baixado');
+}
+
+// ================= TOAST =================
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1600);
+}
+</script>
+
+</body>
+</html>
