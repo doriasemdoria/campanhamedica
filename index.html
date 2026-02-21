@@ -15,7 +15,6 @@
   --text:#e6edf3;
   --muted:#8b949e;
   --accent:#3fb950;
-  --danger:#f85149;
 }
 *{box-sizing:border-box}
 body{
@@ -50,7 +49,7 @@ header{
   color:var(--muted);
   font-weight:600
 }
-input,select,textarea{
+textarea{
   width:100%;
   padding:12px;
   border-radius:10px;
@@ -58,7 +57,8 @@ input,select,textarea{
   background:#0d1117;
   color:var(--text);
   margin-bottom:8px;
-  font-family:inherit
+  font-family:inherit;
+  resize:vertical;
 }
 button{
   width:100%;
@@ -72,6 +72,11 @@ button{
   transition:.15s ease
 }
 button:active{transform:scale(.97)}
+.stats{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:6px;
+}
 .toast{
   position:fixed;
   bottom:40px;
@@ -95,19 +100,20 @@ button:active{transform:scale(.97)}
 <div class="container">
 
 <div class="card">
-<h3>Template de campanha</h3>
+<h3>Colar números dos médicos</h3>
 
-<select id="templateSelect">
-  <option value="pediatria">Pediatria</option>
-  <option value="utipedneo">UTI Ped/Neo</option>
-  <option value="adulto">Adulto</option>
-  <option value="utiadulto">UTI Adulto</option>
-</select>
+<textarea id="numbers" rows="10"
+placeholder="Cole os números aqui
 
-<textarea id="numbers" rows="8"
-placeholder="Cole os números aqui (um por linha ou separados por vírgula)"></textarea>
+Aceita:
+• um por linha
+• com espaço
+• com vírgula
+• com ou sem 55"></textarea>
 
 <button onclick="downloadCSV()">⬇️ Baixar CSV</button>
+
+<div id="stats" class="stats"></div>
 </div>
 
 </div>
@@ -117,31 +123,58 @@ placeholder="Cole os números aqui (um por linha ou separados por vírgula)"></t
 <script>
 // ================= NORMALIZAR =================
 function normalizeNumber(n){
-  let num=n.replace(/\D/g,'');
+  let num = (n || '').replace(/\D/g,'');
+
+  if(num.length < 10) return null;
+
   if(!num.startsWith('55')) num='55'+num;
+
+  if(num.length < 12 || num.length > 13) return null;
+
   return num;
+}
+
+// ================= PROCESSAR =================
+function getValidNumbers(){
+  const raw = numbers.value.trim();
+  if(!raw) return { valid: [], invalidCount: 0 };
+
+  const parts = raw.split(/[\n,; ]+/).filter(Boolean);
+
+  const validSet = new Set();
+  let invalidCount = 0;
+
+  parts.forEach(p=>{
+    const n = normalizeNumber(p);
+    if(n) validSet.add(n);
+    else invalidCount++;
+  });
+
+  return {
+    valid: [...validSet],
+    invalidCount
+  };
 }
 
 // ================= CSV =================
 function downloadCSV(){
-  const raw=numbers.value.trim();
-  if(!raw) return toast('Cole os números');
+  const { valid, invalidCount } = getValidNumbers();
 
-  const nums=raw
-    .split(/[\n,; ]+/)
-    .filter(Boolean)
-    .map(normalizeNumber);
+  if(!valid.length) return toast('Nenhum número válido');
 
   let csv='Nome;Telefone\n';
-  nums.forEach(n=>{csv+=`;${n}\n`;});
+  valid.forEach(n=>{csv+=`;${n}\n`;});
 
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=templateSelect.value+'.csv';
+  a.download='campanha.csv';
   a.click();
 
-  toast('CSV baixado');
+  stats.textContent =
+    `✔ ${valid.length} válidos • ✖ ${invalidCount} inválidos`;
+
+  toast(valid.length + ' números válidos');
 }
 
 // ================= TOAST =================
